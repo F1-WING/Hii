@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HypeNews</title>
+<style>
+/* === GLOBAL COLOR THEMES === */
+:root {
+  --bg-gradient: linear-gradient(135deg,#190537,#2f2fa2,#4c4177,#e96443);
+  --f1-gradient: linear-gradient(135deg,#001e26,#004d73,#00c1d4);
+  --card-bg: rgba(255,255,255,0.08);
+  --glass: blur(18px);
+  --text: #fff;
+  --primary: #ffbb33;
+  --accent: #00e5ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--bg-gradient);
+  color: var(--text);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+h1,h2,h3,p { margin: 0; }
+/* Splash */
+#splash {
+  position: fixed;
+  top:0;left:0;right:0;bottom:0;
+  background: var(--bg-gradient);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:3000;
+  animation: fadeOut 0.6s ease 1.2s forwards;
+}
+#splash h1 { font-size:3rem; color: var(--primary); animation: scaleIn 0.8s cubic-bezier(0.23,1,0.32,1);}
+#splash .underline {height:4px;background:var(--accent);width:0;margin-top:10px;border-radius:2px;animation: growLine 0.8s ease 0.3s forwards;}
+@keyframes scaleIn {0%{transform:scale(0) rotate(-10deg);opacity:0;}70%{transform:scale(1.1) rotate(3deg);opacity:1;}100%{transform:scale(1);}}
+@keyframes growLine { to {width:160px;} }
+@keyframes fadeOut { to {opacity:0;visibility:hidden;} }
+/* Header */
+header {
+  text-align:center;padding:20px;font-size:2rem;font-weight:bold;color:var(--primary);
+  backdrop-filter:var(--glass);background:var(--card-bg);position:sticky;top:0;z-index:1000;
+  box-shadow:0 4px 15px rgba(0,0,0,0.4);
+}
+.dark-toggle {
+  position:fixed;top:20px;right:20px;background:var(--primary);color:white;
+  padding:10px;border:none;border-radius:50%;cursor:pointer;transition:transform 0.3s;
+}
+.dark-toggle:hover { transform: rotate(20deg); }
+/* Search */
+.search-bar {display:flex;gap:10px;justify-content:center;padding:20px;flex-wrap:wrap;}
+.search-bar input {padding:12px;border-radius:10px;border:none;flex:1;max-width:500px;}
+.search-bar button {padding:12px 18px;background:var(--primary);border:none;border-radius:10px;font-weight:bold;color:white;cursor:pointer;}
+.search-bar button:hover {background:#ffd366;}
+/* Categories */
+.categories {
+  display:flex;justify-content:center;gap:15px;padding:10px 15px;background:var(--card-bg);
+  backdrop-filter:var(--glass);position:sticky;top:80px;z-index:900;overflow-x:auto;
+}
+.categories button {
+  background:none;border:2px solid transparent;color:var(--text);font-weight:bold;cursor:pointer;
+  padding:8px 16px;border-radius:20px;transition:0.3s;white-space:nowrap;
+}
+.categories button.active {background:var(--accent);color:#000;}
+/* Skeleton */
+.skeleton {background:linear-gradient(90deg,#999,#bbb,#999);background-size:200%;animation:shimmer 1.5s infinite;}
+@keyframes shimmer {0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+/* News Grid */
+.news-container {
+  display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:25px;
+  padding:20px;max-width:1400px;margin:auto;min-height:60vh;
+}
+.news-card {
+  background:var(--card-bg);backdrop-filter:var(--glass);border-radius:15px;overflow:hidden;
+  position:relative;display:flex;flex-direction:column;opacity:0;transform:translateY(30px);
+  animation:fadeUp 0.8s ease forwards;transition:transform 0.4s ease;
+}
+.news-card:hover {transform:translateY(-8px) scale(1.03) rotateX(3deg);}
+@keyframes fadeUp {to {opacity:1;transform:translateY(0);}}
+.news-card img {width:100%;height:200px;object-fit:cover;}
+.news-card .content {padding:15px;flex:1;display:flex;flex-direction:column;}
+.news-card h3 {margin:0 0 10px;color:var(--accent);cursor:pointer;}
+.date-label {font-size:0.8rem;opacity:0.7;}
+.badge {position:absolute;top:10px;left:10px;background:var(--primary);padding:5px 10px;border-radius:5px;font-size:0.8rem;}
+.read-direct {background:var(--primary);color:white;border:none;padding:8px;border-radius:8px;margin-top:10px;cursor:pointer;}
+/* Modal */
+.modal {position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:none;justify-content:center;align-items:center;padding:20px;overflow-y:auto;z-index:2000;}
+.modal-content {background:var(--card-bg);border-radius:20px;padding:20px;max-width:900px;width:90%;animation:popIn 0.6s cubic-bezier(0.18,0.89,0.32,1.28);box-shadow:0 0 30px rgba(0,229,255,0.3);}
+@keyframes popIn {0%{opacity:0;transform:scale(0.5);}70%{opacity:1;transform:scale(1.08);}100%{transform:scale(1);}}
+.modal-content img {width:100%;border-radius:15px;margin-bottom:15px;}
+.modal-content h2 {margin:0 0 10px;color:var(--accent);cursor:pointer;}
+.close-btn {float:right;background:var(--primary);border:none;padding:5px 10px;color:white;cursor:pointer;border-radius:5px;}
+.related {margin-top:20px;}
+.related h3 {margin-bottom:10px;color:var(--primary);}
+.related-grid {display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:15px;}
+.related-item {background:rgba(255,255,255,0.1);padding:10px;border-radius:10px;cursor:pointer;}
+.related-item img {width:100%;height:120px;object-fit:cover;border-radius:10px;}
+.read-more-btn {margin-top:15px;background:var(--primary);padding:10px 15px;border:none;border-radius:8px;color:white;font-weight:bold;cursor:pointer;}
+.error-message {font-size:1.4rem;text-align:center;margin-top:40px;color:#fff;font-weight:bold;}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <h1>HypeNews</h1>
+  <div class="underline"></div>
+</div>
+
+<header>HypeNews</header>
+
+<button class="dark-toggle" onclick="toggleDarkMode()">🌙</button>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search news..." />
+  <button onclick="onInitialSearch()">Search</button>
+</div>
+
+<div class="categories" id="categoryTabs">
+  <button data-category="" class="active">All</button>
+  <button data-category="entertainment">Entertainment</button>
+  <button data-category="gaming">Games</button>
+  <button data-category="f1">F1 News</button>
+</div>
+
+<div class="news-container" id="newsContainer"></div>
+
+<div class="modal" id="newsModal">
+  <div class="modal-content" id="modalContent"></div>
+</div>
+
+<script>
+// Credentials & app state variables
+const currentsApiKey = 'zAtjznNUdc6Jd6VYj0xCyFs_-1ioJ8bXulnsWKFfI5XFMdga';
+let currentCategory = '';
+let searchMode = false;
+let currentQuery = '';
+let currentPage = 1;
+let shownArticles = new Set();
+let pinnedArticle = null;
+let relatedArticles = [];
+let isLoading = false;
+
+// UI theme toggle handler
+function toggleDarkMode() {
+  document.body.classList.toggle('dark');
+}
+
+// Check cache helper (valid for 4 minutes = 240000 ms)
+function getCachedData(key) {
+  const cachedItem = localStorage.getItem(key);
+  if (!cachedItem) return null;
+  
+  try {
+    const parsed = JSON.parse(cachedItem);
+    const isExpired = (Date.now() - parsed.timestamp) > (4 * 60 * 1000);
+    if (isExpired) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return parsed.data;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Save data into cache with current timestamp
+function setCachedData(key, data) {
+  const payload = {
+    timestamp: Date.now(),
+    data: data
+  };
+  localStorage.setItem(key, JSON.stringify(payload));
+}
+
+// Category tabs click listener
+document.getElementById('categoryTabs').addEventListener('click', function(e) {
+  if (e.target.tagName === 'BUTTON') {
+    document.querySelectorAll('.categories button').forEach(btn => btn.classList.remove('active'));
+    e.target.classList.add('active');
+    
+    currentCategory = e.target.dataset.category;
+    document.body.style.background = (currentCategory === 'f1') ? 'var(--f1-gradient)' : 'var(--bg-gradient)';
+    
+    // Switch tab triggers a fresh load
+    initHome();
+  }
+});
+
+// Main fetching function featuring 4-minute caching layer
+async function fetchArticles({query='', page=1}={}) {
+  let endpoint = '';
+
+  if (searchMode && query) {
+    endpoint = `https://api.currentsapi.services/v1/search?keywords=${encodeURIComponent(query)}&language=en&page_number=${page}`;
+  } else {
+    if (currentCategory === 'entertainment') {
+      endpoint = `https://api.currentsapi.services/v1/latest-news?language=en&category=entertainment&page_number=${page}`;
+    } else if (currentCategory === 'gaming') {
+      endpoint = `https://api.currentsapi.services/v1/search?keywords=gaming&language=en&page_number=${page}`;
+    } else if (currentCategory === 'f1') {
+      endpoint = `https://api.currentsapi.services/v1/search?keywords=formula%201&language=en&page_number=${page}`;
+    } else {
+      endpoint = `https://api.currentsapi.services/v1/latest-news?language=en&page_number=${page}`;
+    }
+  }
+
+  // Create unique cache key based on current view/search/page
+  const cacheKey = `hypenews_cache_${currentCategory}_${query}_${page}`;
+  const savedNews = getCachedData(cacheKey);
+  
+  if (savedNews) {
+    console.log("Serving news from 4-minute cache (API call skipped).");
+    return savedNews;
+  }
+
+  try {
+    const response = await fetch(endpoint, {
+      headers: {
+        'Authorization': `Bearer ${currentsApiKey}`
+      }
+    });
+
+    if (!response.ok) throw new Error('API connection failed');
+    
+    const jsonRes = await response.json();
+    const rawList = jsonRes.news || [];
+    
+    let formattedList = rawList.map(item => ({
+      title: item.title,
+      description: item.description || '',
+      content: item.description || '',
+      image: (item.image && item.image !== 'None') ? item.image : 'https://via.placeholder.com/400x200',
+      url: item.url,
+      publishedAt: item.published || new Date().toISOString()
+    }));
+
+    formattedList.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+    const filtered = formattedList.filter(a => !shownArticles.has(a.url));
+
+    // Save into cache for 4 minutes
+    setCachedData(cacheKey, filtered);
+    return filtered;
+
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+// Render loading skeletons
+function showSkeletons(count = 6) {
+  const container = document.getElementById('newsContainer');
+  container.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const sk = document.createElement('div');
+    sk.className = 'news-card';
+    sk.innerHTML = `
+      <div class="skeleton" style="height:200px;"></div>
+      <div class="content">
+        <div class="skeleton" style="height:20px;width:80%;margin:10px 0;"></div>
+        <div class="skeleton" style="height:14px;width:60%;margin:5px 0;"></div>
+      </div>`;
+    container.appendChild(sk);
+  }
+}
+
+// Core news loading orchestrator
+async function loadNews() {
+  if (isLoading) return;
+  isLoading = true;
+
+  if (currentPage === 1) {
+    showSkeletons();
+  }
+
+  const articles = await fetchArticles({ query: currentQuery, page: currentPage });
+  const container = document.getElementById('newsContainer');
+
+  if (!articles) {
+    container.innerHTML = `<div class="error-message">Unable to fetch news right now. Please check back shortly.</div>`;
+    isLoading = false;
+    return;
+  }
+
+  if (currentPage === 1) {
+    container.innerHTML = '';
+  }
+
+  let newsToDisplay = articles;
+  if (currentPage === 1 && pinnedArticle) {
+    newsToDisplay = newsToDisplay.filter(a => a.url !== pinnedArticle.url);
+    newsToDisplay.unshift(pinnedArticle);
+  }
+  
+  relatedArticles = newsToDisplay;
+
+  for (const article of newsToDisplay) {
+    if (shownArticles.has(article.url)) continue;
+    shownArticles.add(article.url);
+
+    const card = document.createElement('div');
+    card.className = 'news-card';
+    const isTrending = article.url === pinnedArticle?.url;
+    const encodedData = encodeURIComponent(JSON.stringify(article));
+
+    card.innerHTML = `
+      <div style="cursor:pointer" onclick="openModalFromData('${encodedData}')">
+        ${isTrending ? `<div class="badge">Trending</div>` : ''}
+        <img src="${article.image}" />
+      </div>
+      <div class="content">
+        <h3 onclick="openModalFromData('${encodedData}')">${article.title}</h3>
+        <p>${article.description || ''}</p>
+        <div class="date-label">📅 ${new Date(article.publishedAt).toLocaleDateString()}</div>
+        <button class="read-direct" onclick="window.open('${article.url}','_blank')">Read More</button>
+      </div>`;
+    
+    container.appendChild(card);
+  }
+
+  currentPage++;
+  isLoading = false;
+}
+
+// Modal handling functions
+function openModalFromData(encodedStr) {
+  const articleObj = JSON.parse(decodeURIComponent(encodedStr));
+  openModal(articleObj);
+}
+
+function openModal(article) {
+  const modal = document.getElementById('newsModal');
+  const modalContent = document.getElementById('modalContent');
+
+  const relatedHTML = relatedArticles
+    .filter(a => a.url !== article.url)
+    .slice(0, 4)
+    .map(a => {
+      const enc = encodeURIComponent(JSON.stringify(a));
+      return `
+        <div class="related-item" onclick="openModalFromData('${enc}')">
+          <img src="${a.image}" />
+          <p>${a.title}</p>
+        </div>`;
+    }).join('');
+
+  modalContent.innerHTML = `
+    <button class="close-btn" onclick="closeModal()">X</button>
+    <img src="${article.image}" />
+    <h2 onclick="window.open('${article.url}','_blank')">${article.title}</h2>
+    <p>${article.content || article.description || ''}</p>
+    <p><b>Date:</b> ${new Date(article.publishedAt).toLocaleString()}</p>
+    <button class="read-more-btn" onclick="window.open('${article.url}','_blank')">Read Full Article</button>
+    <div class="related">
+      <h3>Related Articles</h3>
+      <div class="related-grid">${relatedHTML}</div>
+    </div>`;
+    
+  modal.style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('newsModal').style.display = 'none';
+}
+
+// Search and home reset triggers
+function onInitialSearch() {
+  const keyword = document.getElementById('searchInput').value.trim();
+  if (!keyword) return alert('Please enter a keyword to search.');
+  
+  searchMode = true;
+  currentQuery = keyword;
+  currentPage = 1;
+  shownArticles.clear();
+  pinnedArticle = null;
+  
+  loadNews();
+}
+
+function initHome() {
+  searchMode = false;
+  currentQuery = '';
+  currentPage = 1;
+  shownArticles.clear();
+  pinnedArticle = null;
+  
+  loadNews();
+}
+
+// Infinite scroll listener
+window.addEventListener('scroll', () => {
+  if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 100)) {
+    loadNews();
+  }
+});
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', initHome);
+</script>
+
+</body>
+</html>
